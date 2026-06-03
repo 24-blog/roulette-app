@@ -1,0 +1,24 @@
+{
+  "name": "Decision Roulette",
+  "short_name": "Decision",
+  "description": "運命を委ねるルーレット",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0f07",
+  "theme_color": "#0a0f07",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

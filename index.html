@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Decision" />
+  <meta name="theme-color" content="#0a0f07" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icon-192.svg" />
+  <title>Decision Roulette</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #c9a84c;
+      --gold-dim: #7a6830;
+      --gold-dark: #3a2e10;
+      --bg: #0a0f07;
+      --bg-mid: #1a2e14;
+      --text: #d4af6a;
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      background: var(--bg);
+      background-image: radial-gradient(ellipse at 50% 0%, var(--bg-mid) 0%, var(--bg) 70%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Playfair Display', Georgia, serif;
+      color: var(--text);
+      padding: 24px 20px 32px;
+      padding-bottom: max(32px, env(safe-area-inset-bottom));
+      gap: 20px;
+      overflow-x: hidden;
+    }
+
+    /* ── Neon overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 100;
+      opacity: 0;
+    }
+    body.neon-green::before {
+      background: radial-gradient(ellipse at 50% 50%, rgba(60,220,100,0.13) 0%, transparent 70%);
+      opacity: 1;
+      animation: neonPulse 1.6s ease-in-out 3;
+    }
+    body.neon-red::before {
+      background: radial-gradient(ellipse at 50% 50%, rgba(230,60,60,0.13) 0%, transparent 70%);
+      opacity: 1;
+      animation: neonPulse 1.6s ease-in-out 3;
+    }
+    body.neon-green::after,
+    body.neon-red::after {
+      content: '';
+      position: fixed;
+      inset: 6px;
+      pointer-events: none;
+      z-index: 101;
+      border-radius: 4px;
+      animation: framePulse 1.6s ease-in-out 3;
+    }
+    body.neon-green::after {
+      border: 1.5px solid rgba(80,255,120,0.5);
+      box-shadow: 0 0 18px rgba(80,255,120,0.4), inset 0 0 18px rgba(80,255,120,0.08);
+    }
+    body.neon-red::after {
+      border: 1.5px solid rgba(255,80,80,0.5);
+      box-shadow: 0 0 18px rgba(255,80,80,0.4), inset 0 0 18px rgba(255,80,80,0.08);
+    }
+    @keyframes neonPulse {
+      0%   { opacity: 0; }
+      20%  { opacity: 1; }
+      50%  { opacity: 0.5; }
+      70%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    @keyframes framePulse {
+      0%   { opacity: 0; }
+      20%  { opacity: 1; }
+      50%  { opacity: 0.4; }
+      70%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* ── Header ── */
+    .header { text-align: center; }
+    .header-sub {
+      font-size: 0.62rem;
+      letter-spacing: 0.35em;
+      color: var(--gold-dim);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      font-family: 'DM Mono', monospace;
+    }
+    .header-main {
+      font-size: 2rem;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      line-height: 1;
+    }
+
+    /* ── Wheel ── */
+    .wheel-wrap {
+      position: relative;
+      width: min(320px, 85vw);
+      height: min(320px, 85vw);
+      filter: drop-shadow(0 0 40px rgba(180,140,50,0.25));
+      transition: filter 0.3s;
+    }
+    .wheel-wrap.neon-green-wheel {
+      filter: drop-shadow(0 0 40px rgba(60,220,100,0.5)) drop-shadow(0 0 80px rgba(60,220,100,0.25));
+      animation: wheelNeon 1.6s ease-in-out 3;
+    }
+    .wheel-wrap.neon-red-wheel {
+      filter: drop-shadow(0 0 40px rgba(230,60,60,0.5)) drop-shadow(0 0 80px rgba(230,60,60,0.25));
+      animation: wheelNeon 1.6s ease-in-out 3;
+    }
+    @keyframes wheelNeon {
+      0%,100% { opacity: 0.7; }
+      50%      { opacity: 1; }
+    }
+    .pin {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0; height: 0;
+      border-left: 9px solid transparent;
+      border-right: 9px solid transparent;
+      border-top: 22px solid var(--gold);
+      z-index: 10;
+      filter: drop-shadow(0 2px 4px rgba(201,168,76,0.6));
+    }
+    #wheel-svg {
+      width: 100%;
+      height: 100%;
+      transform-origin: center;
+    }
+
+    /* ── Result ── */
+    .result-area { min-height: 72px; text-align: center; }
+    .result-badge {
+      font-size: 2.4rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .result-badge.glow-green {
+      text-shadow: 0 0 20px rgba(80,255,120,0.8), 0 0 40px rgba(80,255,120,0.4);
+    }
+    .result-badge.glow-red {
+      text-shadow: 0 0 20px rgba(255,80,80,0.8), 0 0 40px rgba(255,80,80,0.4);
+    }
+    .result-sub {
+      font-size: 0.68rem;
+      letter-spacing: 0.22em;
+      color: var(--gold-dim);
+      text-transform: uppercase;
+      margin-top: 6px;
+      font-family: 'DM Mono', monospace;
+    }
+    .result-idle {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--gold-dark);
+      text-transform: uppercase;
+      font-family: 'DM Mono', monospace;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.4); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    /* ── Divider ── */
+    .divider {
+      width: 200px; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold-dark), transparent);
+    }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex; flex-direction: column; gap: 8px;
+      padding: 14px 24px;
+      border: 1px solid #2a2010; border-radius: 2px;
+      background: rgba(255,255,255,0.02);
+      min-width: 200px;
+    }
+    .legend-title {
+      font-size: 0.6rem; letter-spacing: 0.25em; color: #5a4e20;
+      text-transform: uppercase; margin-bottom: 4px; text-align: center;
+      font-family: 'DM Mono', monospace;
+    }
+    .legend-row {
+      display: flex; align-items: center; gap: 8px;
+      font-family: 'DM Mono', monospace; font-size: 0.72rem;
+      letter-spacing: 0.12em; color: #9a8840;
+    }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Buttons ── */
+    .spin-btn {
+      background: linear-gradient(135deg, #c9a84c, #7a5c1a);
+      border: none; color: #0a0f07;
+      font-family: 'Playfair Display', serif; font-weight: 700;
+      font-size: 1.1rem; letter-spacing: 0.12em;
+      padding: 14px 52px; border-radius: 2px; cursor: pointer;
+      text-transform: uppercase;
+      transition: opacity 0.2s, transform 0.1s;
+      box-shadow: 0 4px 24px rgba(201,168,76,0.3);
+      touch-action: manipulation;
+    }
+    .spin-btn:hover:not(:disabled) { opacity: 0.88; transform: scale(1.03); }
+    .spin-btn:active:not(:disabled) { transform: scale(0.97); }
+    .spin-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Sound toggle ── */
+    .sound-toggle {
+      position: fixed; top: 14px; right: 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid #2a2010; border-radius: 2px;
+      color: var(--gold-dim); font-family: 'DM Mono', monospace;
+      font-size: 0.58rem; letter-spacing: 0.15em;
+      padding: 6px 10px; cursor: pointer;
+      touch-action: manipulation; z-index: 200;
+      text-transform: uppercase; transition: color 0.2s, border-color 0.2s;
+    }
+    .sound-toggle:hover { color: var(--gold); border-color: var(--gold-dim); }
+    .sound-toggle.muted { opacity: 0.4; }
+
+    /* ── Install banner ── */
+    #install-banner {
+      display: none; position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #1a2e14;
+      border-top: 1px solid var(--gold-dark);
+      padding: 12px 20px;
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      text-align: center; z-index: 300;
+    }
+    #install-banner p {
+      font-family: 'DM Mono', monospace; font-size: 0.65rem;
+      letter-spacing: 0.15em; color: var(--gold-dim);
+      margin-bottom: 8px; text-transform: uppercase;
+    }
+    .install-btn {
+      background: var(--gold); border: none; color: #0a0f07;
+      font-family: 'DM Mono', monospace; font-size: 0.65rem;
+      letter-spacing: 0.15em; padding: 8px 24px; border-radius: 2px;
+      cursor: pointer; text-transform: uppercase; margin-right: 8px;
+    }
+    .dismiss-btn {
+      background: transparent; border: 1px solid var(--gold-dark); color: var(--gold-dark);
+      font-family: 'DM Mono', monospace; font-size: 0.65rem;
+      letter-spacing: 0.15em; padding: 8px 16px; border-radius: 2px;
+      cursor: pointer; text-transform: uppercase;
+    }
+
+    .footer-note {
+      font-size: 0.58rem; color: var(--gold-dark);
+      letter-spacing: 0.15em; text-align: center;
+      font-family: 'DM Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <button class="sound-toggle" id="sound-toggle">♪ ON</button>
+
+  <div class="header">
+    <div class="header-sub">Decision</div>
+    <div class="header-main">ROULETTE</div>
+  </div>
+
+  <div class="wheel-wrap" id="wheel-wrap">
+    <div class="pin"></div>
+    <svg id="wheel-svg" viewBox="0 0 320 320" width="320" height="320">
+      <circle cx="160" cy="160" r="158" fill="#1a1208" stroke="#c9a84c" stroke-width="2.5"/>
+      <circle cx="160" cy="160" r="148" fill="none" stroke="#3a2e10" stroke-width="1"/>
+      <g id="segments"></g>
+      <circle cx="160" cy="160" r="50" fill="#0e1a0a" stroke="#c9a84c" stroke-width="1.5"/>
+      <circle cx="160" cy="160" r="36" fill="#121e0e" stroke="#3a2e10" stroke-width="1"/>
+      <circle cx="160" cy="160" r="10" fill="#c9a84c"/>
+    </svg>
+  </div>
+
+  <div class="result-area" id="result-area">
+    <div class="result-idle">運命を委ねよ</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="legend">
+    <div class="legend-title">Wheel Legend</div>
+    <div class="legend-row">
+      <div class="legend-dot" style="background:#c0392b"></div>
+      <span>続ける ×2 — 赤</span>
+    </div>
+    <div class="legend-row">
+      <div class="legend-dot" style="background:#1a1a1a;border:1px solid #555"></div>
+      <span>続ける ×1 — 黒</span>
+    </div>
+    <div class="legend-row">
+      <div class="legend-dot" style="background:#1a6b2a"></div>
+      <span>やめる ×1 — 緑</span>
+    </div>
+  </div>
+
+  <button class="spin-btn" id="spin-btn">SPIN</button>
+
+  <div class="footer-note">FOR ENTERTAINMENT ONLY</div>
+
+  <div id="install-banner">
+    <p>ホーム画面に追加してオフラインでも使えます</p>
+    <button class="install-btn" id="install-btn">追加する</button>
+    <button class="dismiss-btn" id="dismiss-btn">閉じる</button>
+  </div>
+
+<script>
+// ──────────────────────────────────────────────
+// 0. Service Worker 登録
+// ──────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      console.log('[SW] registered, scope:', reg.scope);
+    }).catch(err => {
+      console.warn('[SW] registration failed:', err);
+    });
+  });
+}
+
+// PWAインストールプロンプト
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-banner').style.display = 'block';
+});
+document.getElementById('install-btn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('install-banner').style.display = 'none';
+});
+document.getElementById('dismiss-btn').addEventListener('click', () => {
+  document.getElementById('install-banner').style.display = 'none';
+});
+
+// ──────────────────────────────────────────────
+// 1. Web Audio — Sound Engine
+// ──────────────────────────────────────────────
+let audioCtx = null;
+let soundEnabled = true;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playTick(volume = 0.3) {
+  if (!soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.04);
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.06);
+  } catch(e) {}
+}
+
+function playSpinStart() {
+  if (!soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(300, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.35);
+  } catch(e) {}
+}
+
+function playStopSound() {
+  if (!soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    [523.25, 659.25, 783.99].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.08;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.18, t + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 1.0);
+      osc.start(t); osc.stop(t + 1.0);
+    });
+  } catch(e) {}
+}
+
+function playContinueSound() {
+  if (!soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const noise = ctx.createOscillator();
+    const noiseGain = ctx.createGain();
+    noise.connect(noiseGain); noiseGain.connect(ctx.destination);
+    noise.type = 'sawtooth';
+    noise.frequency.setValueAtTime(80, ctx.currentTime);
+    noise.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.15);
+    noiseGain.gain.setValueAtTime(0.4, ctx.currentTime);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    noise.start(ctx.currentTime); noise.stop(ctx.currentTime + 0.2);
+    [311.13, 369.99].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      const t = ctx.currentTime + 0.1 + i * 0.06;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.14, t + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+      osc.start(t); osc.stop(t + 0.8);
+    });
+  } catch(e) {}
+}
+
+const soundToggle = document.getElementById('sound-toggle');
+soundToggle.addEventListener('click', () => {
+  soundEnabled = !soundEnabled;
+  soundToggle.textContent = soundEnabled ? '♪ ON' : '♪ OFF';
+  soundToggle.classList.toggle('muted', !soundEnabled);
+  if (soundEnabled) getAudioCtx();
+});
+
+// ──────────────────────────────────────────────
+// 2. ルーレット データ & SVG描画
+// ──────────────────────────────────────────────
+const SEGMENTS = [
+  { label: "続ける", sub: "CONTINUE", color: "#c0392b", textColor: "#f5e8c0" },
+  { label: "続ける", sub: "CONTINUE", color: "#1a1a1a", textColor: "#f5e8c0" },
+  { label: "やめる", sub: "STOP",     color: "#1a6b2a", textColor: "#f0ffd0" },
+  { label: "続ける", sub: "CONTINUE", color: "#c0392b", textColor: "#f5e8c0" },
+];
+
+const N = SEGMENTS.length;
+const SEG_DEG = 360 / N;
+const CX = 160, CY = 160, R_INNER = 50, R_OUTER = 144, R_TEXT = 104;
+const DEG = d => d * Math.PI / 180;
+
+function arcPath(i) {
+  const a0 = DEG(i * SEG_DEG - 90), a1 = DEG((i + 1) * SEG_DEG - 90);
+  const x1 = CX + R_INNER*Math.cos(a0), y1 = CY + R_INNER*Math.sin(a0);
+  const x2 = CX + R_OUTER*Math.cos(a0), y2 = CY + R_OUTER*Math.sin(a0);
+  const x3 = CX + R_OUTER*Math.cos(a1), y3 = CY + R_OUTER*Math.sin(a1);
+  const x4 = CX + R_INNER*Math.cos(a1), y4 = CY + R_INNER*Math.sin(a1);
+  return `M${x1},${y1} L${x2},${y2} A${R_OUTER},${R_OUTER} 0 0,1 ${x3},${y3} L${x4},${y4} A${R_INNER},${R_INNER} 0 0,0 ${x1},${y1}Z`;
+}
+
+const group = document.getElementById('segments');
+SEGMENTS.forEach((seg, i) => {
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', arcPath(i));
+  path.setAttribute('fill', seg.color);
+  path.setAttribute('stroke', '#0a0f07');
+  path.setAttribute('stroke-width', '1.2');
+  group.appendChild(path);
+
+  const a = DEG(i * SEG_DEG - 90);
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', CX + R_INNER*Math.cos(a)); line.setAttribute('y1', CY + R_INNER*Math.sin(a));
+  line.setAttribute('x2', CX + R_OUTER*Math.cos(a)); line.setAttribute('y2', CY + R_OUTER*Math.sin(a));
+  line.setAttribute('stroke', '#c9a84c'); line.setAttribute('stroke-width', '1.5'); line.setAttribute('opacity', '0.5');
+  group.appendChild(line);
+
+  const mid = DEG((i + 0.5) * SEG_DEG - 90);
+  const tx = CX + R_TEXT*Math.cos(mid), ty = CY + R_TEXT*Math.sin(mid);
+  const rot = (i + 0.5) * SEG_DEG;
+
+  const t1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  t1.setAttribute('x', tx); t1.setAttribute('y', ty - 7);
+  t1.setAttribute('text-anchor', 'middle'); t1.setAttribute('dominant-baseline', 'middle');
+  t1.setAttribute('font-size', '13'); t1.setAttribute('font-family', "'Playfair Display', Georgia, serif");
+  t1.setAttribute('font-weight', '700'); t1.setAttribute('fill', seg.textColor);
+  t1.setAttribute('transform', `rotate(${rot},${tx},${ty})`);
+  t1.textContent = seg.label;
+  group.appendChild(t1);
+
+  const t2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  t2.setAttribute('x', tx); t2.setAttribute('y', ty + 8);
+  t2.setAttribute('text-anchor', 'middle'); t2.setAttribute('dominant-baseline', 'middle');
+  t2.setAttribute('font-size', '7.5'); t2.setAttribute('font-family', "'DM Mono', monospace");
+  t2.setAttribute('font-weight', '300'); t2.setAttribute('fill', seg.textColor); t2.setAttribute('opacity', '0.7');
+  t2.setAttribute('transform', `rotate(${rot},${tx},${ty})`);
+  t2.textContent = seg.sub;
+  group.appendChild(t2);
+});
+
+// ──────────────────────────────────────────────
+// 3. スピンロジック
+// ──────────────────────────────────────────────
+function getResultIndex(totalDeg) {
+  const norm = ((-totalDeg % 360) + 360) % 360;
+  return Math.floor(norm / SEG_DEG) % N;
+}
+
+let spinning = false;
+let totalRotation = 0;
+let tickTimer = null;
+const wheelSvg = document.getElementById('wheel-svg');
+const wheelWrap = document.getElementById('wheel-wrap');
+const resultArea = document.getElementById('result-area');
+const spinBtn = document.getElementById('spin-btn');
+
+function scheduleTickSounds(durationMs) {
+  let elapsed = 0, interval = 80;
+  function tick() {
+    if (elapsed >= durationMs) return;
+    playTick(Math.max(0.08, 0.35 * (1 - elapsed / durationMs)));
+    elapsed += interval;
+    interval = Math.min(interval * 1.09, 600);
+    tickTimer = setTimeout(tick, interval);
+  }
+  tick();
+}
+
+function clearNeon() {
+  document.body.classList.remove('neon-green', 'neon-red');
+  wheelWrap.classList.remove('neon-green-wheel', 'neon-red-wheel');
+}
+
+spinBtn.addEventListener('click', () => {
+  if (spinning) return;
+  spinning = true;
+  spinBtn.disabled = true;
+  spinBtn.textContent = 'Spinning...';
+
+  getAudioCtx(); // モバイルAudioContextアンロック
+  clearNeon();
+  resultArea.innerHTML = '<div class="result-idle" style="letter-spacing:0.25em">· · ·</div>';
+
+  const DURATION = 5500;
+  playSpinStart();
+  if (tickTimer) clearTimeout(tickTimer);
+  scheduleTickSounds(DURATION);
+
+  const delta = (8 + Math.floor(Math.random() * 5)) * 360 + Math.random() * 360;
+  totalRotation += delta;
+  const finalRot = totalRotation;
+
+  wheelSvg.style.transition = `transform ${DURATION / 1000}s cubic-bezier(0.08,0.82,0.17,1)`;
+  wheelSvg.style.transform = `rotate(${finalRot}deg)`;
+
+  setTimeout(() => {
+    if (tickTimer) clearTimeout(tickTimer);
+
+    const seg = SEGMENTS[getResultIndex(finalRot)];
+    const isStop = seg.sub === 'STOP';
+
+    isStop ? playStopSound() : playContinueSound();
+
+    clearNeon();
+    document.body.classList.add(isStop ? 'neon-green' : 'neon-red');
+    wheelWrap.classList.add(isStop ? 'neon-green-wheel' : 'neon-red-wheel');
+
+    const color = isStop ? '#5dcc7a' : '#e87070';
+    const glowClass = isStop ? 'glow-green' : 'glow-red';
+    resultArea.innerHTML = `
+      <div class="result-badge ${glowClass}" style="color:${color}">${seg.label}</div>
+      <div class="result-sub">${isStop ? '— それが答えかもしれない —' : '— もう少し、続けてみよう —'}</div>
+    `;
+
+    setTimeout(clearNeon, 4900);
+
+    spinning = false;
+    spinBtn.disabled = false;
+    spinBtn.textContent = 'SPIN';
+  }, DURATION + 100);
+});
+</script>
+</body>
+</html>

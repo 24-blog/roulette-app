@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" fill="#0a0f07"/>
+  <!-- outer ring -->
+  <circle cx="96" cy="96" r="86" fill="#1a1208" stroke="#c9a84c" stroke-width="3"/>
+  <!-- segments -->
+  <!-- top-right: red -->
+  <path d="M96,96 L96,18 A78,78 0 0,1 174,96 Z" fill="#c0392b"/>
+  <!-- bottom-right: black -->
+  <path d="M96,96 L174,96 A78,78 0 0,1 96,174 Z" fill="#1a1a1a"/>
+  <!-- bottom-left: green -->
+  <path d="M96,96 L96,174 A78,78 0 0,1 18,96 Z" fill="#1a6b2a"/>
+  <!-- top-left: red -->
+  <path d="M96,96 L18,96 A78,78 0 0,1 96,18 Z" fill="#c0392b"/>
+  <!-- dividers -->
+  <line x1="96" y1="18" x2="96" y2="174" stroke="#c9a84c" stroke-width="1.5" opacity="0.6"/>
+  <line x1="18" y1="96" x2="174" y2="96" stroke="#c9a84c" stroke-width="1.5" opacity="0.6"/>
+  <!-- hub -->
+  <circle cx="96" cy="96" r="22" fill="#0e1a0a" stroke="#c9a84c" stroke-width="2"/>
+  <circle cx="96" cy="96" r="6" fill="#c9a84c"/>
+  <!-- pin -->
+  <polygon points="96,6 90,20 102,20" fill="#c9a84c"/>
+</svg>
