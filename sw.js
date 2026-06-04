@@ -1,4 +1,4 @@
-const CACHE_NAME = 'decision-roulette-v1';
+const CACHE_NAME = 'decision-roulette-v2';
 const ASSETS = [
   './index.html',
   './manifest.json',
