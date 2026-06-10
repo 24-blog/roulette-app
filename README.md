@@ -1,7 +1,3 @@
-Preview<br>
-https://24-blog.github.io/roulette-app/
-
-
 ⚠️COPYRIGHT<br>
 The source code of this repository is licensed under  AGPL-3.0.
 
