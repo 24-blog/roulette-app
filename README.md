@@ -1,4 +1,4 @@
-[![License](https://img.shields.io/github/license/24-blog/roulette-app)](LICENSE)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-orange)](LICENSE)
 
 
 ⚠️COPYRIGHT<br>
